@@ -1,15 +1,15 @@
 class Config(object):
 	def __init__(self):
 		# data file
-		self.train_annFile = r'D:\visualqa\train\v2_mscoco_train2014_annotations.json'
-		self.train_questionFile = r'D:\visualqa\train\v2_OpenEnded_mscoco_train2014_questions.json'
-		self.val_annFile = r'D:\visualqa\val\v2_mscoco_val2014_annotations.json'
-		self.val_questionFile = r'D:\visualqa\val\v2_OpenEnded_mscoco_val2014_questions.json'
-		self.train_img_dir = r'D:\visualqa\train\train2014\COCO_train2014_'
-		self.val_img_dir = r'D:\visualqa\val\val2014\COCO_val2014_'
+		self.train_annFile = r'~\data\vqa\v2_mscoco_train2014_annotations.json'
+		self.train_questionFile = r'~\data\vqa\v2_OpenEnded_mscoco_train2014_questions.json'
+		self.val_annFile = r'~\data\vqa\v2_mscoco_val2014_annotations.json'
+		self.val_questionFile = r'~\data\vqa\v2_OpenEnded_mscoco_val2014_questions.json'
+		self.train_img_dir = r'~\data\vqa\train2014\COCO_train2014_'
+		self.val_img_dir = r'~\data\vqa\val2014\COCO_val2014_'
 
 		# filter condition
-		self.answer_type = ['yes/no']
+		self.answer_type = None
 		# {'other', 'number', 'yes/no'}
 		self.question_type = None
 		# {'what is on the', 'are the', 'is it', 'is the person', 'can you', 'what is the name', 'how many people are',
@@ -23,14 +23,14 @@ class Config(object):
 		#  'what time', 'is', 'what sport is', 'what is this'}
 
 		# data save directory
-		self.train_data_file = r"D:\visualqa\train_data.csv"
-		self.val_data_file = r"D:\visualqa\val_data.csv"
-		self.vocab2index_dict = r'D:\visualqa\w2i.txt'
-		self.index2vocab_dict = r'D:\visualqa\i2w.txt'
+		self.train_data_file = r"~\data\vqa\train_data.csv"
+		self.val_data_file = r"~\data\vqa\val_data.csv"
+		self.vocab2index_dict = r'~\data\vqa\w2i.txt'
+		self.index2vocab_dict = r'~\data\vqa\i2w.txt'
 
-		self.save_data_file = r'D:\visualqa\data.pkl'
-		self.train_image_feature_dir = r'D:\visualqa\train\train_image_feature'
-		self.val_image_feature_dir = r'D:\visualqa\val\val_image_feature'
+		self.save_data_file = r'~\data\vqa\data.pkl'
+		self.train_image_feature_dir = r'~\data\vqa\train_image_feature'
+		self.val_image_feature_dir = r'~\data\vqa\val_image_feature'
 
 		# answer encode format
 		self.answer_encode_format = 'softmax'

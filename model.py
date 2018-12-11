@@ -2,8 +2,8 @@ import keras.backend as K
 from keras import Input
 from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape
 from keras.models import Model
-from visualqa.config import Config
-from visualqa.data_generater import DataGenerate
+from config import Config
+from data_generater import DataGenerate
 
 
 def visual_question_feature_embedding(visual_feature, question_feature, embedding_dim=100):
