@@ -15,8 +15,8 @@ from parse import DataParser
 class DataGenerate(object):
     def __init__(self, config):
         self.config = config
-        vgg19 = VGG19(weights='imagenet', include_top=True)
-        self.base_model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('flatten').output)
+        vgg19 = VGG19(weights='imagenet', include_top=False)
+        self.base_model = Model(inputs=vgg19.input, outputs=vgg19.output)
         self.model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('block5_conv4').output)
         self._data = DataParser(config)
         if not os.path.isfile(self.config.save_data_file):
@@ -86,7 +86,7 @@ class DataGenerate(object):
 
     def _encode_base_image(self):
         self.cur_index = 0
-        for image_id in self._data.train_dataset['image_id']:
+        for image_id in self._data.train_data['image_id']:
             image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
             feature_file = os.path.join(self.config.base_train_image_feature_dir, str(image_id) + '.npy')
             if not os.path.isfile(image_file):
@@ -98,7 +98,7 @@ class DataGenerate(object):
             np.save(feature_file, image_feature)
             print('train image feature:%d saved' % image_id)
 
-        for image_id in self._data.val_dataset['image_id']:
+        for image_id in self._data.val_data['image_id']:
             image_file = self.config.val_img_dir + str(image_id).zfill(12) + '.jpg'
             feature_file = os.path.join(self.config.base_val_image_feature_dir, str(image_id) + '.npy')
             if not os.path.isfile(image_file):
@@ -112,7 +112,7 @@ class DataGenerate(object):
 
     def _encode_image(self):
         self.cur_index = 0
-        for image_id in self._data.train_dataset['image_id']:
+        for image_id in self._data.train_data['image_id']:
             image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
             feature_file = os.path.join(self.config.train_image_feature_dir, str(image_id) + '.npy')
             if not os.path.isfile(image_file):
@@ -125,7 +125,7 @@ class DataGenerate(object):
             np.save(feature_file, image_feature)
             print('train image feature:%d saved' % image_id)
 
-        for image_id in self._data.val_dataset['image_id']:
+        for image_id in self._data.val_data['image_id']:
             image_file = self.config.val_img_dir + str(image_id).zfill(12) + '.jpg'
             feature_file = os.path.join(self.config.val_image_feature_dir, str(image_id) + '.npy')
             if not os.path.isfile(image_file):
@@ -176,11 +176,11 @@ class DataGenerate(object):
         :return: (img, question, answer)
         """
         if self.config.data_type == 'train':
-            data = self._data.train_dataset
+            data = self._data.train_data
             sample_size = self._data.train_sample_size
         else:
-            data = self._data.val_dataset
-            sample_size = self._data.val_dataset
+            data = self._data.val_data
+            sample_size = self._data.val_data
 
         image_ids = data['image_id']
         questions = np.array(list(data['question']))
@@ -227,8 +227,8 @@ class DataGenerate(object):
             yield ([image_input, questions_input], answers_input)
 
     def show_data_random(self):
-        rand_index = np.random.randint(0, len(self._data.train_dataset))
-        d = self._data.train_dataset.iloc[rand_index]
+        rand_index = np.random.randint(0, len(self._data.train_data))
+        d = self._data.train_data.iloc[rand_index]
         image_file = self.config.train_img_dir + str(d['image_id']).zfill(12) + '.jpg'
         question = d['question']
         answer = d['answer']

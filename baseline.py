@@ -1,7 +1,7 @@
 import keras.backend as K
 from keras import Input, optimizers
 from keras.applications import VGG19
-from keras.layers import GRU, Dropout, Dense, Embedding, concatenate, Flatten
+from keras.layers import Dropout, Dense, Embedding, concatenate, Flatten
 from keras.models import Model
 
 from config import Config
@@ -10,13 +10,13 @@ from data_generater import DataGenerate
 
 def build_model():
     """
-    build and complie model
+    build and compile model
     :param input_v: visual local feature with shape of (14*14, 512)
     :param input_q: question encoded with vector
     :return: model
     """
     input_q = Input(shape=(query_maxlen,))
-    vgg19 = VGG19(weights='imagenet', include_top=False)
+    vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
     layer_name = []
     for layer in vgg19.layers:
@@ -28,14 +28,14 @@ def build_model():
         input_q)  # (samples, query_maxlen, embedding_dim)
     q = Dropout(0.5)(q)
 
-    input = concatenate([Flatten(x), Flatten(q)])
+    flatten = concatenate([Flatten()(x), Flatten()(q)])
 
-    answer = Dense(1, activation='sigmoid')(input)
+    answer = Dense(1, activation='sigmoid')(flatten)
     model = Model([vgg19.input, input_q], answer)
 
-    opt = optimizers.Adam(lr=0.001)
+    optimizer = optimizers.Adam(lr=0.001)
 
-    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
 
     return model
 
@@ -54,9 +54,9 @@ if __name__ == '__main__':
 
     # data._encode_image()
 
-    model = build_model()
-    print(model.summary())
+    base_model = build_model()
+    print(base_model.summary())
 
-    model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=2)
+    base_model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=2)
 
-    model.save('model.h5')
+    base_model.save('base_model.h5')
