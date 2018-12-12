@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from keras.preprocessing.text import text_to_word_sequence
-from visualqa.config import Config
+from config import Config
 
 
 class DataParser(object):

@@ -1,9 +1,9 @@
 import keras.backend as K
 from keras import Input
-from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape
+from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, Softmax
 from keras.models import Model
-from visualqa.config import Config
-from visualqa.data_generater import DataGenerate
+from config import Config
+from data_generater import DataGenerate
 
 
 def visual_question_feature_embedding(visual_feature, question_feature, embedding_dim=100):
@@ -13,7 +13,7 @@ def visual_question_feature_embedding(visual_feature, question_feature, embeddin
 	:param embedding_size:
 	:return:
 	"""
-	gru_hidding_size = 256
+	gru_hidding_size = 512
 	q = Embedding(input_dim=vocab_size + 1, output_dim=embedding_dim, input_length=query_maxlen)(
 		question_feature)  # (samples, query_maxlen, embedding_dim)
 	q = Dropout(0.5)(q)
@@ -27,11 +27,15 @@ def visual_question_feature_embedding(visual_feature, question_feature, embeddin
 
 
 def gate(inputs):
-	v_encoder, q_encoder = inputs
-	z = K.concatenate([v_encoder * Reshape((1, 256))(q_encoder), v_encoder * Reshape((1, 256))(q_encoder),
-					   K.abs(v_encoder - Reshape((1, 256))(q_encoder)),
-					   K.abs(v_encoder - Reshape((1, 256))(q_encoder))], axis=-1)
+	v_encoder, q_encoder, pre_memory = inputs
+	z = K.concatenate([v_encoder * Reshape((1, 512))(q_encoder), v_encoder * Reshape((1, 512))(pre_memory),
+					   K.abs(v_encoder - Reshape((1, 512))(q_encoder)),
+					   K.abs(v_encoder - Reshape((1, 512))(pre_memory))], axis=-1)
 	return z
+
+
+def softmax_norm(input):
+	return K.exp(input) / K.sum(K.exp(input))
 
 
 def episodic_memory_module(visual_feature, question_feature, pre_memory):
@@ -43,12 +47,12 @@ def episodic_memory_module(visual_feature, question_feature, pre_memory):
 	:return:
 	"""
 	# calculate update gate z
-	z = Lambda(gate)([visual_feature, question_feature])
-	z = Dense(512, activation='tanh')(z)
+	z = Lambda(gate)([visual_feature, question_feature, pre_memory])
+	z = Dense(128, activation='tanh')(z)
 	z = Dropout(0.5)(z)
 	# softmax_size = visual_feature.shape[1]  # softmax_size = embdding_size
-	z = Dense(1, activation='sigmoid')(z)  # shape: (batch_size, softmax_size)
-
+	z = Dense(1)(z)  # shape: (batch_size, 196)
+	z = Lambda(softmax_norm)(z)
 	c = Lambda(lambda inputs: K.sum(inputs[0] * inputs[1], axis=1))([visual_feature, z])
 	cur_memory = Dense(512, activation='relu')(concatenate([pre_memory, c, question_feature], axis=-1))
 	cur_memory = Dropout(0.5)(cur_memory)
@@ -56,7 +60,8 @@ def episodic_memory_module(visual_feature, question_feature, pre_memory):
 
 
 def answer_module(memory, question, answer_size):
-	answer = Dense(answer_size, activation='sigmoid')(concatenate([memory, question]))
+	answer = Dense(128, activation='relu')(concatenate([memory, question]))
+	answer = Dense(1, activation='sigmoid')(answer)
 	return answer
 
 
@@ -84,7 +89,7 @@ if __name__ == '__main__':
 	train = data.generate_data()
 
 	setting = data.get_config()
-	answer_size = setting['answer_word_size']
+	answer_size = setting['answer_word_size'] - 1
 	steps_per_epoch = setting['steps_per_epoch']
 	vocab_size = setting['vocab_size']
 	query_maxlen = setting['max_question_size']
@@ -96,6 +101,6 @@ if __name__ == '__main__':
 	model = build_model(input_v, input_q, answer_size)
 	print(model.summary())
 
-	model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=5)
+	model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=2)
 
 	model.save('model.h5')

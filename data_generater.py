@@ -9,8 +9,8 @@ import keras.backend as K
 from keras import Model
 from keras.applications import VGG19
 from keras.preprocessing.image import load_img, img_to_array
-from visualqa.config import Config
-from visualqa.parse import DataParser
+from config import Config
+from parse import DataParser
 
 
 class DataGenerate(object):
@@ -70,7 +70,9 @@ class DataGenerate(object):
 		return visual_feature.reshape(feature_rows * feature_clos, size)
 
 	def oht_encode(self, answer):
-		return answer-1
+		oht = np.zeros(self._data.max_answer_size)
+		oht[answer] = 1
+		return oht
 
 	def _encode_image(self):
 		self.cur_index = 0
@@ -80,7 +82,6 @@ class DataGenerate(object):
 			if not os.path.isfile(image_file):
 				continue
 			if os.path.isfile(feature_file):
-				shutil.copy(feature_file, r'D:\visualqa\upload')
 				continue
 			image_array = self.image_process(image_file)
 			[image_feature] = self.local_region_feature_extraction(image_array)
@@ -140,7 +141,7 @@ class DataGenerate(object):
 
 		image_ids = data['image_id']
 		questions = np.array(list(data['question']))
-		answers = data['answer']
+		answers = data['answer'] - 1
 
 		while True:
 			if self.cur_index + self.config.batch_size > sample_size:
@@ -157,7 +158,7 @@ class DataGenerate(object):
 			questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
 
 			answers_input = answers.iloc[self.cur_index: self.cur_index + self.config.batch_size]
-			answers_input = np.array(list(answers_input.apply(self.oht_encode)))
+			answers_input = np.array(list(answers_input))
 
 			self.cur_index += self.config.batch_size
 			yield ([image_input, questions_input], answers_input)
