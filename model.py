@@ -1,5 +1,5 @@
 import keras.backend as K
-from keras import Input
+from keras import Input, optimizers, callbacks
 from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, Softmax
 from keras.models import Model
 from config import Config
@@ -79,7 +79,9 @@ def build_model(input_v, input_q, answer_size):
 
 	model = Model([input_v, input_q], output)
 
-	model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+	opt = optimizers.Adam(lr=0.0001)
+
+	model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
 	return model
 
 
@@ -101,6 +103,23 @@ if __name__ == '__main__':
 	model = build_model(input_v, input_q, answer_size)
 	print(model.summary())
 
-	model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=2)
+	model_name = 'my_model.h5'
+	modelCheckpoint = callbacks.ModelCheckpoint(
+		model_name,
+		monitor='val_loss',
+		verbose=1,
+		save_best_only=True,
+		save_weights_only=False,
+		mode='auto',
+		period=1)
+
+	earlyStopping = callbacks.EarlyStopping(
+		monitor='val_loss',
+		patience=10,
+		verbose=1)
+
+	model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=2, class_weight='auto',
+				  callbacks=[modelCheckpoint,
+							 earlyStopping])
 
 	model.save('model.h5')
