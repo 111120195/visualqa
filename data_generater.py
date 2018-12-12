@@ -1,6 +1,5 @@
 import os
 import pickle
-import shutil
 import matplotlib.pyplot as plt
 import numpy as np
 import skimage.io as io
@@ -16,8 +15,9 @@ from parse import DataParser
 class DataGenerate(object):
 	def __init__(self, config):
 		self.config = config
-		base_model = VGG19(weights='imagenet', include_top=False)
-		self.model = Model(inputs=base_model.input, outputs=base_model.get_layer('block5_conv4').output)
+		vgg19 = VGG19(weights='imagenet', include_top=True)
+		self.base_model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('flatten').output)
+		self.model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('block5_conv4').output)
 		self._data = DataParser(config)
 		if not os.path.isfile(self.config.save_data_file):
 			self._data.parse()
@@ -54,6 +54,10 @@ class DataGenerate(object):
 		img_input = np.expand_dims(img_input, axis=0)
 		return self.model.predict(img_input)
 
+	def base_feature_extraction(self, image_array):
+		img_input = np.expand_dims(image_array, axis=0)
+		return self.base_model.predict(img_input)
+
 	def snack_reshape(self, visual_feature):
 		"""
 		convert visual feature to vector series
@@ -69,10 +73,42 @@ class DataGenerate(object):
 				visual_feature[i] = visual_feature[i][-1::-1]
 		return visual_feature.reshape(feature_rows * feature_clos, size)
 
-	def oht_encode(self, answer):
+	def oht_answer(self, answer):
 		oht = np.zeros(self._data.max_answer_size)
 		oht[answer] = 1
 		return oht
+
+	def oht_question(self, question):
+		oht = np.zeros((self._data.max_question_size, self._data.word_size + 1))
+		for i, q in enumerate(question):
+			oht[i][q] = 1
+		return oht
+
+	def _encode_base_image(self):
+		self.cur_index = 0
+		for image_id in self._data.train_dataset['image_id']:
+			image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
+			feature_file = os.path.join(self.config.base_train_image_feature_dir, str(image_id) + '.npy')
+			if not os.path.isfile(image_file):
+				continue
+			if os.path.isfile(feature_file):
+				continue
+			image_array = self.image_process(image_file)
+			[image_feature] = self.base_feature_extraction(image_array)
+			np.save(feature_file, image_feature)
+			print('train image feature:%d saved' % image_id)
+
+		for image_id in self._data.val_dataset['image_id']:
+			image_file = self.config.val_img_dir + str(image_id).zfill(12) + '.jpg'
+			feature_file = os.path.join(self.config.base_val_image_feature_dir, str(image_id) + '.npy')
+			if not os.path.isfile(image_file):
+				continue
+			if os.path.isfile(feature_file):
+				continue
+			image_array = self.image_process(image_file)
+			[image_feature] = self.base_feature_extraction(image_array)
+			np.save(feature_file, image_feature)
+			print('val image feature:%d saved' % image_id)
 
 	def _encode_image(self):
 		self.cur_index = 0
@@ -114,6 +150,13 @@ class DataGenerate(object):
 				img_feature.append(img_f)
 		return np.array(img_feature)
 
+	def get_base_image_feature(self, image_ids):
+		img_feature = []
+		for id in image_ids:
+			img = self.image_process(self.config.train_img_dir + str(id).zfill(12) + '.jpg')
+			img_feature.append(img)
+		return np.array(img_feature)
+
 	def get_config(self):
 		steps_per_epoch = self._data.train_sample_size // self.config.batch_size
 		vocab_size = self._data.word_size
@@ -125,7 +168,7 @@ class DataGenerate(object):
 				  }
 		return config
 
-	def generate_data(self):
+	def generate_data(self, baseline=False):
 		"""
 		:param question_type:
 		:param iter_num:
@@ -143,7 +186,7 @@ class DataGenerate(object):
 		questions = np.array(list(data['question']))
 		answers = data['answer'] - 1
 
-		while True:
+		while not baseline:
 			if self.cur_index + self.config.batch_size > sample_size:
 				mask = np.arange(sample_size)
 				np.random.shuffle(mask)
@@ -154,6 +197,26 @@ class DataGenerate(object):
 
 			image = image_ids.iloc[self.cur_index: self.cur_index + self.config.batch_size]
 			image_input = self.get_image_feature(image)
+
+			questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
+
+			answers_input = answers.iloc[self.cur_index: self.cur_index + self.config.batch_size]
+			answers_input = np.array(list(answers_input))
+
+			self.cur_index += self.config.batch_size
+			yield ([image_input, questions_input], answers_input)
+
+		while baseline:
+			if self.cur_index + self.config.batch_size > sample_size:
+				mask = np.arange(sample_size)
+				np.random.shuffle(mask)
+				image_ids = image_ids[mask]
+				questions = questions[mask]
+				answers = answers[mask]
+				self.cur_index = 0
+
+			image = image_ids.iloc[self.cur_index: self.cur_index + self.config.batch_size]
+			image_input = self.get_base_image_feature(image)
 
 			questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
 
@@ -182,7 +245,7 @@ class DataGenerate(object):
 if __name__ == '__main__':
 	config = Config()
 	data = DataGenerate(config)
-	# data._encode_image()
-	train = data.generate_data()
+	data._encode_base_image()
+	train = data.generate_data(baseline=True)
 	[a, b], c = next(train)
 	data.show_data_random()

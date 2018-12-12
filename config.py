@@ -32,10 +32,12 @@ class Config(object):
 		self.train_image_feature_dir = r'~\data\vqa\train_image_feature'
 		self.val_image_feature_dir = r'~\data\vqa\val_image_feature'
 
+		self.base_train_image_feature_dir = r'D:\visualqa\train\base_train_image_feature'
+		self.base_val_image_feature_dir = r'D:\visualqa\val\base_val_image_feature'
 		# answer encode format
 		self.answer_encode_format = 'softmax'
 
-		self.batch_size = 128
+		self.batch_size = 16
 
 		# data type: train or val
 		self.data_type = 'train'

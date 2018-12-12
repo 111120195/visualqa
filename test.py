@@ -1,9 +1,10 @@
-from keras.layers import GRU, Dense, Dropout, Bidirectional, Embedding, Dot, Reshape
+from keras.layers import GRU, Dense, Dropout, Bidirectional, Embedding, Dot, Reshape, BatchNormalization
 from keras.layers import Input
 from keras.layers.merge import concatenate, subtract, multiply, add
 from keras.layers.core import RepeatVector, Lambda
 from keras.models import Model
 import keras.backend as K
+import numpy as np
 
 
 def episodic_memory_module(visual_feature, question_feature, pre_memory):
@@ -28,47 +29,27 @@ def episodic_memory_module(visual_feature, question_feature, pre_memory):
 
 
 if __name__ == '__main__':
-	input_v = Input(shape=(14 * 14, 512))
-	input_q = Input(shape=(23,))
+	video_c3d_input = Input(shape=(20, 4096), dtype=np.float32)
+	video_xcep_input = Input(shape=(20, 1920), dtype=np.float32)
+	video_question_input = Input(shape=(20,), dtype='int32')
 
-	vocab_size = 10000
-	query_maxlen = 23
-	gru_hidding_size = 256
-	embedding_dim = 512
-	q = Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=query_maxlen)(
-		input_q)  # (samples, query_maxlen, embedding_dim)
-	q = Dropout(0.5)(q)
-	q_encoder = Bidirectional(GRU(gru_hidding_size), merge_mode='ave')(q)  # (samples, 256)
+	encoded_video_c3d = model_attention_applied_after_lstm(video_c3d_input, 20, 512, '1')
+	encoded_video_xcep = model_attention_applied_after_lstm(video_xcep_input, 20, 1024, '2')
 
-	v = Dense(embedding_dim, activation='tanh')(input_v)
-	v = Dropout(0.5)(v)
-	v_encoder = Bidirectional(
-		GRU(units=gru_hidding_size, return_sequences=True), merge_mode='ave')(v)  # (samples, 196, 256)
+	encoded_video_question = encoded_video_question_create(video_question_input)
+	merged = concatenate([
+		encoded_video_c3d,
+		encoded_video_xcep, encoded_video_question])
 
+	merged = BatchNormalization()(merged)
+	merged = Dense(1024)(merged)
+	merged = Dropout(0.5)(merged)
+	output = Dense(100, activation='softmax')(merged)
 
-	# memory = episodic_memory_module(visual_feature=v_encoder, question_feature=q_encoder, pre_memory=q_encoder)
-	def foo(inputs):
-		v_encoder, q_encoder = inputs
-		z = K.concatenate([v_encoder * q_encoder, v_encoder * q_encoder,
-						   K.abs(v_encoder - Reshape((1, 256))(q_encoder)),
-						   K.abs(v_encoder - Reshape((1, 256))(q_encoder))], axis=-1)
-		return z
+	vqa_model = Model(inputs=[
+		video_c3d_input,
+		video_xcep_input, video_question_input], outputs=output)
 
-
-	z = Lambda(foo)([v_encoder, q_encoder])
-
-	print(z)
-	z = Dense(512, activation='tanh')(z)
-	print(z)
-	z = Dense(1, activation='sigmoid')(z)  # shape: (batch_size, softmax_size)
-	print(z)
-
-	# c = K.sum(d, axis=1)  # shape: (batc = Lambda(lambda inputs: K.sum(inputs[0] * inputs[1], axis=1))([v_encoder, z])ch_size, softmax_size)
-	print('c:', c)
-	m = concatenate([q_encoder, c, q_encoder], axis=-1)
-	print('m:', m)
-	cur_memory = Dense(512, activation='relu')(m)
-	print('cur_memory:', cur_memory)
-# model = Model([input_q, input_v], z)
-# # model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-# model.summary()
+	# compile model
+	vqa_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+	vqa_model.summary()
