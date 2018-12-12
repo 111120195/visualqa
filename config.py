@@ -32,6 +32,8 @@ class Config(object):
 		self.train_image_feature_dir = r'D:\visualqa\train\train_image_feature'
 		self.val_image_feature_dir = r'D:\visualqa\val\val_image_feature'
 
+		self.base_train_image_feature_dir = r'D:\visualqa\train\base_train_image_feature'
+		self.base_val_image_feature_dir = r'D:\visualqa\val\base_val_image_feature'
 		# answer encode format
 		self.answer_encode_format = 'softmax'
 

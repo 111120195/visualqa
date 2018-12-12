@@ -1,8 +1,9 @@
 import keras.backend as K
-from keras import Input, optimizers, callbacks
+from keras import Input, optimizers
 from keras.applications import VGG19
-from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, Softmax
+from keras.layers import GRU, Dropout, Dense, Embedding, concatenate
 from keras.models import Model
+
 from config import Config
 from data_generater import DataGenerate
 

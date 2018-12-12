@@ -1,6 +1,5 @@
 import os
 import pickle
-import shutil
 import matplotlib.pyplot as plt
 import numpy as np
 import skimage.io as io
@@ -16,9 +15,9 @@ from parse import DataParser
 class DataGenerate(object):
 	def __init__(self, config):
 		self.config = config
-		self.base_model = VGG19(weights='imagenet', include_top=True)
-
-		self.model = Model(inputs=self.base_model.input, outputs=self.base_model.get_layer('block5_conv4').output)
+		vgg19 = VGG19(weights='imagenet', include_top=True)
+		self.base_model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('flatten').output)
+		self.model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('block5_conv4').output)
 		self._data = DataParser(config)
 		if not os.path.isfile(self.config.save_data_file):
 			self._data.parse()
@@ -55,6 +54,10 @@ class DataGenerate(object):
 		img_input = np.expand_dims(img_input, axis=0)
 		return self.model.predict(img_input)
 
+	def base_feature_extraction(self, image_array):
+		img_input = np.expand_dims(image_array, axis=0)
+		return self.base_model.predict(img_input)
+
 	def snack_reshape(self, visual_feature):
 		"""
 		convert visual feature to vector series
@@ -80,6 +83,32 @@ class DataGenerate(object):
 		for i, q in enumerate(question):
 			oht[i][q] = 1
 		return oht
+
+	def _encode_base_image(self):
+		self.cur_index = 0
+		for image_id in self._data.train_dataset['image_id']:
+			image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
+			feature_file = os.path.join(self.config.base_train_image_feature_dir, str(image_id) + '.npy')
+			if not os.path.isfile(image_file):
+				continue
+			if os.path.isfile(feature_file):
+				continue
+			image_array = self.image_process(image_file)
+			[image_feature] = self.base_feature_extraction(image_array)
+			np.save(feature_file, image_feature)
+			print('train image feature:%d saved' % image_id)
+
+		for image_id in self._data.val_dataset['image_id']:
+			image_file = self.config.val_img_dir + str(image_id).zfill(12) + '.jpg'
+			feature_file = os.path.join(self.config.base_val_image_feature_dir, str(image_id) + '.npy')
+			if not os.path.isfile(image_file):
+				continue
+			if os.path.isfile(feature_file):
+				continue
+			image_array = self.image_process(image_file)
+			[image_feature] = self.base_feature_extraction(image_array)
+			np.save(feature_file, image_feature)
+			print('val image feature:%d saved' % image_id)
 
 	def _encode_image(self):
 		self.cur_index = 0
@@ -216,7 +245,7 @@ class DataGenerate(object):
 if __name__ == '__main__':
 	config = Config()
 	data = DataGenerate(config)
-	# data._encode_image()
+	data._encode_base_image()
 	train = data.generate_data(baseline=True)
 	[a, b], c = next(train)
 	data.show_data_random()
