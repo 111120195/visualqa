@@ -24,7 +24,7 @@ def build_model():
         layer_name.append(layer.name)
     x = vgg19.output
 
-    q = Embedding(input_dim=vocab_size + 1, output_dim=1000, input_length=query_maxlen)(
+    q = Embedding(input_dim=vocab_size + 2, output_dim=256, input_length=query_maxlen)(
         input_q)  # (samples, query_maxlen, embedding_dim)
     q = Dropout(0.5)(q)
 

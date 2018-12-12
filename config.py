@@ -2,7 +2,7 @@ class Config(object):
     def __init__(self):
         # data file
         self.train_annFile = r'../data/v2_mscoco_train2014_annotations.json'
-        self.train_questionFile = r'../datav2_OpenEnded_mscoco_train2014_questions.json'
+        self.train_questionFile = r'../data/v2_OpenEnded_mscoco_train2014_questions.json'
         self.val_annFile = r'../data/v2_mscoco_val2014_annotations.json'
         self.val_questionFile = r'../data/v2_OpenEnded_mscoco_val2014_questions.json'
         self.train_img_dir = r'../data/train2014/COCO_train2014_'

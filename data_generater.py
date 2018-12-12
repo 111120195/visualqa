@@ -153,7 +153,10 @@ class DataGenerate(object):
     def get_base_image_feature(self, image_ids):
         img_feature = []
         for id in image_ids:
-            img = self.image_process(self.config.train_img_dir + str(id).zfill(12) + '.jpg')
+            img_file = self.config.train_img_dir + str(id).zfill(12) + '.jpg'
+            if not os.path.isfile(img_file):
+                continue
+            img = self.image_process(img_file)
             img_feature.append(img)
         return np.array(img_feature)
 

@@ -107,7 +107,8 @@ class DataParser(object):
         return '\n'.join(answer_res)
 
     def encode_question(self, question):
-        encoder = [self.words2index[w] for w in text_to_word_sequence(question)]
+        encoder = [self.words2index[w] if w in self.words2index else self.word_size + 1 for w in
+                   text_to_word_sequence(question)]
         question_encoder = [0 for i in range(self.max_question_size - len(encoder))]
         question_encoder.extend(encoder)
         return question_encoder
@@ -145,7 +146,10 @@ class DataParser(object):
 
         questions = ' '.join([x[2] for x in questions_train_ls])
         questions = questions + ' ' + ' '.join([x[2] for x in questions_val_ls])
-        questions = set(text_to_word_sequence(questions))
+        counter = Counter(text_to_word_sequence(questions))
+
+        questions = set(dict(counter.most_common(6000)).keys())
+        # questions = set()
         answers = set([x[2] for x in answers_train_ls])
         answers = answers.union(set([x[2] for x in answers_val_ls]))
 
@@ -199,7 +203,7 @@ if __name__ == '__main__':
     data = DataParser(config)
     data.parse()
     # data.save_result()
-    data.info()
+    # data.info()
 # generate_test = data.generate_data(100, data='val')
 # generate_train = data.generate_data(100, data='train')
 # [a, b], c = next(generate_train)
