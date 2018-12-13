@@ -61,8 +61,6 @@ class DataParser(object):
                     [anns['image_id'], anns['question_id'], w])
             self._question_ids.add(anns['question_id'])
 
-    # TODO add max answer size
-
     def parse_question(self, ques=None, questions_ls=None):
         for que in ques['questions']:
             if que['question_id'] not in self._question_ids:

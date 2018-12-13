@@ -1,21 +1,26 @@
 import keras.backend as K
 from keras import Input
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, Softmax
 from keras.models import Model
 from config import Config
 from data_generater import DataGenerate
+import h5py
+from keras.models import load_model
+from keras.optimizers import Adam
 
 
-def visual_question_feature_embedding(visual_feature, question_feature, embedding_dim=100):
+def visual_question_feature_embedding(visual_feature, question_feature, embedding_dim=256):
     """
     :param question_feature:
     :param visual_feature: output of snack_reshape
     :param embedding_size:
     :return:
     """
-    gru_hidding_size = 256
-    q = Embedding(input_dim=vocab_size + 1, output_dim=embedding_dim, input_length=query_maxlen)(
+    gru_hidding_size = 512
+    q = Embedding(input_dim=vocab_size + 2, output_dim=embedding_dim, input_length=query_maxlen)(
         question_feature)  # (samples, query_maxlen, embedding_dim)
+    # TODO using Bert language model
     q = Dropout(0.5)(q)
     q_encoder = Bidirectional(GRU(gru_hidding_size), merge_mode='ave')(q)
 
@@ -28,9 +33,9 @@ def visual_question_feature_embedding(visual_feature, question_feature, embeddin
 
 def gate(inputs):
     v_encoder, q_encoder, pre_memory = inputs
-    z = K.concatenate([v_encoder * Reshape((1, 256))(q_encoder), v_encoder * Reshape((1, 256))(pre_memory),
-                       K.abs(v_encoder - Reshape((1, 256))(q_encoder)),
-                       K.abs(v_encoder - Reshape((1, 256))(pre_memory))], axis=-1)
+    z = K.concatenate([v_encoder * Reshape((1, 512))(q_encoder), v_encoder * Reshape((1, 512))(pre_memory),
+                       K.abs(v_encoder - Reshape((1, 512))(q_encoder)),
+                       K.abs(v_encoder - Reshape((1, 512))(pre_memory))], axis=-1)
     return z
 
 
@@ -48,13 +53,14 @@ def episodic_memory_module(visual_feature, question_feature, pre_memory):
     """
     # calculate update gate z
     z = Lambda(gate)([visual_feature, question_feature, pre_memory])
-    z = Dense(128, activation='tanh')(z)
+    z = Dense(512, activation='tanh')(z)
     z = Dropout(0.5)(z)
     # softmax_size = visual_feature.shape[1]  # softmax_size = embdding_size
     z = Dense(1)(z)  # shape: (batch_size, 196)
     z = Lambda(softmax_norm)(z)
     c = Lambda(lambda inputs: K.sum(inputs[0] * inputs[1], axis=1))([visual_feature, z])
-    cur_memory = Dense(256, activation='relu')(concatenate([pre_memory, c, question_feature], axis=-1))
+    # TODO using GRU attention
+    cur_memory = Dense(512, activation='relu')(concatenate([pre_memory, c, question_feature], axis=-1))
     cur_memory = Dropout(0.5)(cur_memory)
     return cur_memory
 
@@ -76,31 +82,41 @@ def build_model(input_v, input_q):
     cur_memory = episodic_memory_module(v_encoder, q_encoder, q_encoder)
     cur_memory = episodic_memory_module(v_encoder, q_encoder, cur_memory)
     output = answer_module(cur_memory, input_q, answer_size)
-
+    # TODO modify net structure
     model = Model([input_v, input_q], output)
-
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    opt = Adam(lr=0.0001)
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
 
 if __name__ == '__main__':
     config = Config()
     data = DataGenerate(config)
-    train = data.generate_data()
+    train = data.generate_data(baseline=False, data_type='train')
+    val = data.generate_data(baseline=False, data_type='val')
 
     setting = data.get_config()
-    answer_size = setting['answer_word_size'] - 1
+    answer_size = setting['answer_word_size']
     steps_per_epoch = setting['steps_per_epoch']
+    validation_steps = setting['validation_steps']
     vocab_size = setting['vocab_size']
     query_maxlen = setting['max_question_size']
-
+    #
     input_v = Input(shape=(14 * 14, 512))
     input_q = Input(shape=(query_maxlen,))
     # data._encode_image()
 
     model = build_model(input_v, input_q)
-    print(model.summary())
+    # print(model.summary())
+    # TODO select fit parameter
+    model.load_weights('model.h5')
 
-    model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=2)
+    checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
+                                 save_best_only=True,
+                                 mode='min', period=1)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 
-    model.save('model.h5')
+    model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=100, validation_data=val,
+                        validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
+
+    model.save('vqa.h5')

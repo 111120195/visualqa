@@ -35,7 +35,7 @@ class Config(object):
         # answer encode format
         self.answer_encode_format = 'softmax'
 
-        self.batch_size = 8
+        self.batch_size = 128
 
         # data type: train or val
-        self.data_type = 'train'
+        # self.data_type = datatype

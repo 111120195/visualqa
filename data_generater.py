@@ -138,9 +138,9 @@ class DataGenerate(object):
             np.save(feature_file, image_feature)
             print('val image feature:%d saved' % image_id)
 
-    def get_image_feature(self, image_ids):
+    def get_image_feature(self, image_ids, data_type):
         img_feature = []
-        if self.config.data_type == 'train':
+        if data_type == 'train':
             for img_id in image_ids:
                 img_f = np.load(os.path.join(self.config.train_image_feature_dir, str(img_id) + '.npy'))
                 img_feature.append(img_f)
@@ -162,28 +162,30 @@ class DataGenerate(object):
 
     def get_config(self):
         steps_per_epoch = self._data.train_sample_size // self.config.batch_size
+        validation_steps = self._data.val_sample_size // self.config.batch_size
         vocab_size = self._data.word_size
         max_question_size = self._data.max_question_size
         answer_size = self._data.answer_word_size
         config = {'steps_per_epoch': steps_per_epoch, 'train_size': self._data.train_sample_size,
                   'vocab_size': vocab_size, 'max_question_size': max_question_size,
-                  'answer_word_size': answer_size
+                  'answer_word_size': answer_size,
+                  'validation_steps': validation_steps
                   }
         return config
 
-    def generate_data(self, baseline=False):
+    def generate_data(self, baseline=False, data_type = 'train'):
         """
         :param question_type:
         :param iter_num:
         :param batch_size:
         :return: (img, question, answer)
         """
-        if self.config.data_type == 'train':
+        if data_type == 'train':
             data = self._data.train_data
             sample_size = self._data.train_sample_size
         else:
             data = self._data.val_data
-            sample_size = self._data.val_data
+            sample_size = self._data.val_sample_size
 
         image_ids = data['image_id']
         questions = np.array(list(data['question']))
@@ -199,7 +201,7 @@ class DataGenerate(object):
                 self.cur_index = 0
 
             image = image_ids.iloc[self.cur_index: self.cur_index + self.config.batch_size]
-            image_input = self.get_image_feature(image)
+            image_input = self.get_image_feature(image, data_type)
 
             questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
 
@@ -248,7 +250,8 @@ class DataGenerate(object):
 if __name__ == '__main__':
     config = Config()
     data = DataGenerate(config)
-    data._encode_base_image()
-    train = data.generate_data(baseline=True)
-    [a, b], c = next(train)
-    data.show_data_random()
+    # data._encode_base_image()
+    train = data.generate_data(baseline=False)
+    val = data.generate_data(data_type='val')
+    [a, b], c = next(val)
+    # data.show_data_random()
