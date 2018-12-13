@@ -101,7 +101,6 @@ class DataGenerate(object):
         """
         encode image and save the image feature to disk for baseline model train
         """
-        self.cur_index = 0
         for image_id in self._data.train_data['image_id']:
             image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
             feature_file = os.path.join(self.config.base_train_image_feature_dir, str(image_id) + '.npy')
@@ -130,7 +129,6 @@ class DataGenerate(object):
         """
          encode image and save the image feature to disk for DMN model train
         """
-        self.cur_index = 0
         for image_id in self._data.train_data['image_id']:
             image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
             feature_file = os.path.join(self.config.train_image_feature_dir, str(image_id) + '.npy')

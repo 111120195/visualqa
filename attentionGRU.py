@@ -131,7 +131,7 @@ class AttGRUCell(Layer):
 
     def call(self, inputs, states, training=None):
         h_tm1 = states[0]  # previous memory
-        assert (len(inputs) == 2)
+        # assert (len(inputs) == 2)
         ques = inputs[1]
         inputs = inputs[0]
         if 0 < self.dropout < 1 and self._dropout_mask is None:

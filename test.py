@@ -1,10 +1,9 @@
-from keras.layers import GRU, Dense, Dropout, Bidirectional, Embedding, Dot, Reshape, BatchNormalization
-from keras.layers import Input
-from keras.layers.merge import concatenate, subtract, multiply, add
-from keras.layers.core import RepeatVector, Lambda
-from keras.models import Model
 import keras.backend as K
 import numpy as np
+from keras.layers import Dense, Dropout, Dot, BatchNormalization
+from keras.layers import Input
+from keras.layers.merge import concatenate
+from keras.models import Model
 
 
 def episodic_memory_module(visual_feature, question_feature, pre_memory):
