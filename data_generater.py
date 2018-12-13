@@ -13,17 +13,23 @@ from parse import DataParser
 
 
 class DataGenerate(object):
+    """
+    generate data to train model
+    """
+
     def __init__(self, config):
         self.config = config
         vgg19 = VGG19(weights='imagenet', include_top=False)
-        self.base_model = Model(inputs=vgg19.input, outputs=vgg19.output)
-        self.model = Model(inputs=vgg19.input, outputs=vgg19.get_layer('block5_conv4').output)
+        self.base_model = Model(inputs=vgg19.input, outputs=vgg19.output)  # to encode image for baseline model
+        self.model = Model(inputs=vgg19.input,
+                           outputs=vgg19.get_layer('block5_conv4').output)  # to encode image for DMN model
         self._data = DataParser(config)
         if not os.path.isfile(self.config.save_data_file):
             self._data.parse()
             self._data.save_result()
             self._data.save_data()
         else:
+            # if DataParser object have saved
             with open(self.config.save_data_file, 'br') as f:
                 self._data = pickle.load(f)
         self.cur_index = 0
@@ -58,7 +64,8 @@ class DataGenerate(object):
         img_input = np.expand_dims(image_array, axis=0)
         return self.base_model.predict(img_input)
 
-    def snack_reshape(self, visual_feature):
+    @staticmethod
+    def snack_reshape(visual_feature):
         """
         convert visual feature to vector series
         :param visual_feature: tensor or array with size (14, 14, 512)
@@ -74,17 +81,26 @@ class DataGenerate(object):
         return visual_feature.reshape(feature_rows * feature_clos, size)
 
     def oht_answer(self, answer):
+        """
+        one hot encoder for answer
+        """
         oht = np.zeros(self._data.max_answer_size)
         oht[answer] = 1
         return oht
 
     def oht_question(self, question):
+        """
+        one hot encoder for question
+        """
         oht = np.zeros((self._data.max_question_size, self._data.word_size + 1))
         for i, q in enumerate(question):
             oht[i][q] = 1
         return oht
 
     def _encode_base_image(self):
+        """
+        encode image and save the image feature to disk for baseline model train
+        """
         self.cur_index = 0
         for image_id in self._data.train_data['image_id']:
             image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
@@ -111,6 +127,9 @@ class DataGenerate(object):
             print('val image feature:%d saved' % image_id)
 
     def _encode_image(self):
+        """
+         encode image and save the image feature to disk for DMN model train
+        """
         self.cur_index = 0
         for image_id in self._data.train_data['image_id']:
             image_file = self.config.train_img_dir + str(image_id).zfill(12) + '.jpg'
@@ -139,6 +158,12 @@ class DataGenerate(object):
             print('val image feature:%d saved' % image_id)
 
     def get_image_feature(self, image_ids, data_type):
+        """
+        get image feature from disk
+        :param image_ids: image ids
+        :param data_type: 'train' or 'val'
+        :return: image feature array
+        """
         img_feature = []
         if data_type == 'train':
             for img_id in image_ids:
@@ -150,7 +175,10 @@ class DataGenerate(object):
                 img_feature.append(img_f)
         return np.array(img_feature)
 
-    def get_base_image_feature(self, image_ids):
+    def get_base_image_array(self, image_ids, data_type):
+        """
+        get image array for training baseline model
+        """
         img_feature = []
         for id in image_ids:
             img_file = self.config.train_img_dir + str(id).zfill(12) + '.jpg'
@@ -160,7 +188,11 @@ class DataGenerate(object):
             img_feature.append(img)
         return np.array(img_feature)
 
-    def get_config(self):
+    def get_data_info(self):
+        """
+        get data info
+        :return: info dict
+        """
         steps_per_epoch = self._data.train_sample_size // self.config.batch_size
         validation_steps = self._data.val_sample_size // self.config.batch_size
         vocab_size = self._data.word_size
@@ -173,12 +205,12 @@ class DataGenerate(object):
                   }
         return config
 
-    def generate_data(self, baseline=False, data_type = 'train'):
+    def generate_data(self, baseline=False, data_type='train'):
         """
-        :param question_type:
-        :param iter_num:
-        :param batch_size:
-        :return: (img, question, answer)
+        generate data for training
+        :param baseline: data for training baseline model or DMN model
+        :param data_type: train data or val data
+        :return: None
         """
         if data_type == 'train':
             data = self._data.train_data
@@ -221,7 +253,7 @@ class DataGenerate(object):
                 self.cur_index = 0
 
             image = image_ids.iloc[self.cur_index: self.cur_index + self.config.batch_size]
-            image_input = self.get_base_image_feature(image)
+            image_input = self.get_base_image_array(image)
 
             questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
 
@@ -232,6 +264,9 @@ class DataGenerate(object):
             yield ([image_input, questions_input], answers_input)
 
     def show_data_random(self):
+        """
+        show question, answer and image from  data set randomly
+        """
         rand_index = np.random.randint(0, len(self._data.train_data))
         d = self._data.train_data.iloc[rand_index]
         image_file = self.config.train_img_dir + str(d['image_id']).zfill(12) + '.jpg'

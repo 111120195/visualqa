@@ -46,7 +46,7 @@ if __name__ == '__main__':
     data = DataGenerate(config)
     train = data.generate_data(baseline=True)
 
-    setting = data.get_config()
+    setting = data.get_data_info()
     answer_size = setting['answer_word_size'] - 1
     steps_per_epoch = setting['steps_per_epoch']
     vocab_size = setting['vocab_size']

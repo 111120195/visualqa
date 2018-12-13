@@ -27,7 +27,6 @@ class Config(object):
         self.val_data_file = r"../data/val_data.csv"
         self.vocab2index_dict = r'../data/w2i.txt'
         self.index2vocab_dict = r'../data/i2w.txt'
-
         self.save_data_file = r'../data/data.pkl'
         self.train_image_feature_dir = r'../data/train_image_feature'
         self.val_image_feature_dir = r'../data/val_image_feature'
@@ -35,7 +34,19 @@ class Config(object):
         # answer encode format
         self.answer_encode_format = 'softmax'
 
-        self.batch_size = 128
+        # model architecture hyper parameter
+        self.image_input_shape = (14*14, 512)
+        self.word_embedding_size = 256
+        self.gru_hidden_size = 512
+        self.drop_out_rate = 0.5
+        self.episodic_memory_hidden_size = 512
+        self.memory_size = 512
+        self.answer_output_hidden_size = 128
 
-        # data type: train or val
-        # self.data_type = datatype
+        # optimizer parameter
+        self.optimizer = 'adam'
+        self.lr = 0.0001
+
+        # fit parameter
+        self.batch_size = 128
+        self.epoch = 100
