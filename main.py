@@ -18,19 +18,19 @@ def train_model():
     #
 
     model = VqaModel(config, data_info).build_model()
-    # print(model.summary())
+    print(model.summary())
     # TODO select fit parameter
-    model.load_weights('model.h5')
-
-    checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
-                                 save_best_only=True,
-                                 mode='min', period=1)
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
-
-    model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=100, validation_data=val,
-                        validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
-
-    model.save('vqa.h5')
+    # model.load_weights('model.h5')
+    #
+    # checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
+    #                              save_best_only=True,
+    #                              mode='min', period=1)
+    # early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+    #
+    # model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=100, validation_data=val,
+    #                     validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
+    #
+    # model.save('vqa.h5')
 
 
 def predict():

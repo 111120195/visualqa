@@ -100,7 +100,7 @@ class VqaModel(object):
         v_encoder, q_encoder = self.visual_question_feature_embedding(v_input, q_input)
         cur_memory = self.episodic_memory_module(v_encoder, q_encoder, q_encoder)
         cur_memory = self.episodic_memory_module(v_encoder, q_encoder, cur_memory)
-        output = self.answer_module(cur_memory, q_input)
+        output = self.answer_module(cur_memory, q_encoder)
         # TODO modify net structure
         _model = Model([v_input, q_input], output)
         opt = Adam(lr=self.config.lr)
