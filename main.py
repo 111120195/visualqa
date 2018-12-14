@@ -1,3 +1,5 @@
+import os
+
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 from config import Config
@@ -18,8 +20,9 @@ def train_model():
     model = VqaModel(config, data_info).build_model()
     print(model.summary())
     # TODO select fit parameter
-
-    checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
+    save_dir = r'./model'
+    model_file = "model_{epoch:02d}-{val_loss:.2f}.hdf5"
+    checkpoint = ModelCheckpoint(os.path.join(save_dir, model_file), monitor='val_loss', verbose=1,
                                  save_best_only=True,
                                  mode='min', period=1)
     early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)

@@ -82,6 +82,7 @@ class VqaModel(object):
 
         answer = Dense(self.config.answer_output_hidden_size,
                        activation='relu')(concatenate([memory, question]))
+        answer = Dropout(self.config.drop_out_rate)(answer)
 
         if answer_classes == 2:
             answer = Dense(1, activation='sigmoid')(answer)
@@ -107,34 +108,33 @@ class VqaModel(object):
         _model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
         return _model
 
-
 # if __name__ == '__main__':
-    # config_ = Config()
-    # data = DataGenerate(config_)
-    # train = data.generate_data(baseline=False, data_type='train')
-    # val = data.generate_data(baseline=False, data_type='val')
-    #
-    # setting = data.get_data_info()
-    # answer_size = setting['answer_word_size']
-    # steps_per_epoch = setting['steps_per_epoch']
-    # validation_steps = setting['validation_steps']
-    # vocab_size = setting['vocab_size']
-    # query_maxlen = setting['max_question_size']
-    # #
+# config_ = Config()
+# data = DataGenerate(config_)
+# train = data.generate_data(baseline=False, data_type='train')
+# val = data.generate_data(baseline=False, data_type='val')
+#
+# setting = data.get_data_info()
+# answer_size = setting['answer_word_size']
+# steps_per_epoch = setting['steps_per_epoch']
+# validation_steps = setting['validation_steps']
+# vocab_size = setting['vocab_size']
+# query_maxlen = setting['max_question_size']
+# #
 
-    # # data._encode_image()
-    #
-    # model = VqaModel(config_).build_model(input_v, input_q)
-    # # print(model.summary())
-    # # TODO select fit parameter
-    # model.load_weights('model.h5')
-    #
-    # checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
-    #                              save_best_only=True,
-    #                              mode='min', period=1)
-    # early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
-    #
-    # model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=100, validation_data=val,
-    #                     validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
-    #
-    # model.save('vqa.h5')
+# # data._encode_image()
+#
+# model = VqaModel(config_).build_model(input_v, input_q)
+# # print(model.summary())
+# # TODO select fit parameter
+# model.load_weights('model.h5')
+#
+# checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
+#                              save_best_only=True,
+#                              mode='min', period=1)
+# early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+#
+# model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=100, validation_data=val,
+#                     validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
+#
+# model.save('vqa.h5')

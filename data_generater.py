@@ -14,7 +14,7 @@ from parse import DataParser
 
 class DataGenerate(object):
     """
-    generate data to train model
+    generate data to train model and validate model
     """
 
     def __init__(self, config):
