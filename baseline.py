@@ -1,6 +1,7 @@
 import keras.backend as K
 from keras import Input, optimizers
 from keras.applications import VGG19
+from keras.callbacks import ModelCheckpoint
 from keras.layers import Dropout, Dense, Embedding, concatenate, Flatten, GRU
 from keras.models import Model
 from keras.utils import plot_model
@@ -42,10 +43,10 @@ if __name__ == '__main__':
 	K.clear_session()
 	config = Config()
 	data = DataGenerate(config)
-	train = data.generate_data(baseline=True)
+	train = data.generate_data(baseline=True, data_type='train')
 
 	setting = data.get_data_info()
-	answer_size = setting['answer_word_size'] - 1
+	answer_size = setting['answer_word_size']
 	steps_per_epoch = setting['steps_per_epoch']
 	vocab_size = setting['vocab_size']
 	query_maxlen = setting['max_question_size']
@@ -54,9 +55,12 @@ if __name__ == '__main__':
 
 	base_model = build_model()
 	print(base_model.summary())
-	plot_model(base_model)
+	# plot_model(base_model)
 
-#
-# base_model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=20)
-#
-# base_model.save('base_model.h5')
+	# checkpoint = ModelCheckpoint('base_model.h5', monitor='val_loss', verbose=1,
+	# 							 save_best_only=True,
+	# 							 mode='min', period=1)
+
+	base_model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=20)
+
+	base_model.save('base_model.h5')

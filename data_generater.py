@@ -181,20 +181,22 @@ class DataGenerate(object):
 		img_feature = []
 		if data_type == 'train':
 			for id in image_ids:
-				img_file = self.config.base_train_img_dir + str(id).zfill(12) + '.jpg'
-				if not os.path.isfile(img_file):
+				img_feature_file =os.path.join(self.config.base_train_image_feature_dir, str(id) + '.npy')
+				if not os.path.isfile(img_feature_file):
 					continue
-				img = self.image_process(img_file)
-				img_feature.append(img)
+				img_f = np.load(img_feature_file)
+				img_feature.append(img_f)
 		else:
 			for id in image_ids:
-				img_file = self.config.val_train_img_dir + str(id).zfill(12) + '.jpg'
-				if not os.path.isfile(img_file):
+				img_feature_file =os.path.join(self.config.base_val_image_feature_dir, str(id) + '.npy')
+				if not os.path.isfile(img_feature_file):
 					continue
-				img = self.image_process(img_file)
-				img_feature.append(img)
+				img_f = np.load(img_feature_file)
+				img_feature.append(img_f)
 
 		return np.array(img_feature)
+
+	# TODO merge to single function
 
 	def get_data_info(self):
 		"""
@@ -261,7 +263,7 @@ class DataGenerate(object):
 				self.cur_index = 0
 
 			image = image_ids.iloc[self.cur_index: self.cur_index + self.config.batch_size]
-			image_input = self.get_base_image_array(image)
+			image_input = self.get_base_image_array(image, data_type)
 
 			questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
 

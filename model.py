@@ -2,7 +2,7 @@ import keras.backend as K
 from keras import Input
 from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape
 from keras.models import Model
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD, RMSprop
 
 
 class VqaModel(object):
@@ -107,7 +107,14 @@ class VqaModel(object):
 		output = self.answer_module(cur_memory, q_encoder)
 		# TODO modify net structure
 		_model = Model([v_input, q_input], output)
-		opt = Adam(lr=self.config.lr)
+
+		if self.config.optimizer == 'sgd':
+			opt = SGD(lr=self.config.lr)
+		elif self.config.optimizer == 'rmsprop':
+			opt = RMSprop(lr=self.config.lr)
+		else:
+			opt = Adam(lr=self.config.lr)
+
 		_model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
 		return _model
 
