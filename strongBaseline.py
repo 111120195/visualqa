@@ -10,13 +10,6 @@ def build_model():
 	pre_trained = ResNet50(include_top=False,
 						   weights='imagenet',
 						   input_shape=(224, 224, 3))
-	print(pre_trained.summary())
-
-
-if __name__ == '__main__':
-	pre_trained = ResNet50(include_top=False,
-						   weights='imagenet',
-						   input_shape=(224, 224, 3))
 
 	for layer in pre_trained.layers:
 		layer.trainable = False
@@ -53,4 +46,9 @@ if __name__ == '__main__':
 
 	model = Model([image_input, question_input], answer)
 
+	return model
+
+
+if __name__ == '__main__':
+	model = build_model()
 	print(model.summary())

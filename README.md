@@ -24,9 +24,14 @@ iBOWIMG模型示意图
 
 参考论文：[Simple Baseline for Visual Question Answering](https://arxiv.org/pdf/1512.02167.pdf)
 ### DMN+
+![](./picture/dmn.jpg)
 
+输入模块
+![](./picture/dmn2.png)
+
+情景记忆单元模块
 ![](./picture/DMN+.png.png)
-
+DMN+网络结构图
 
 参考论文：[Dynamic Memory Networks for Visual and Textual Question Answering](https://arxiv.org/pdf/1603.01417.pdf)
 ### strong baseline model
