@@ -85,7 +85,7 @@ class DataGenerate(object):
 		"""
 		one hot encoder for answer
 		"""
-		oht = np.zeros(self._data.max_answer_size)
+		oht = np.zeros(self._data.answer_word_size+1)
 		oht[answer] = 1
 		return oht
 
@@ -231,7 +231,7 @@ class DataGenerate(object):
 
 		image_ids = data['image_id']
 		questions = np.array(list(data['question']))
-		answers = data['answer'] - 1
+		answers = data['answer']
 
 		while not baseline:
 			if self.cur_index + self.config.batch_size > sample_size:
@@ -248,6 +248,7 @@ class DataGenerate(object):
 			questions_input = questions[self.cur_index: self.cur_index + self.config.batch_size]
 
 			answers_input = answers.iloc[self.cur_index: self.cur_index + self.config.batch_size]
+			answers_input = answers_input.apply(self.oht_answer)
 			answers_input = np.array(list(answers_input))
 
 			self.cur_index += self.config.batch_size
@@ -283,7 +284,8 @@ class DataGenerate(object):
 		question = d['question']
 		answer = d['answer']
 		q = ' '.join(self._data.index2words[x] for x in question if x != 0)
-		a = self._data.index2words[answer]
+
+		a = self._data.index2words[answer] if answer in self._data.index2words else 'UNKNOWN'
 		print('question:\n' + q)
 		print('answer:\n' + a)
 		im = io.imread(image_file)
@@ -295,8 +297,8 @@ class DataGenerate(object):
 if __name__ == '__main__':
 	config = Config()
 	data = DataGenerate(config)
-	data._encode_base_image()
-# train = data.generate_data(baseline=False)
-# val = data.generate_data(data_type='val')
-# [a, b], c = next(val)
-# data.show_data_random()
+	# data._encode_base_image()
+	train = data.generate_data(baseline=False)
+	val = data.generate_data(data_type='val')
+	[a, b], c = next(train)
+	data.show_data_random()

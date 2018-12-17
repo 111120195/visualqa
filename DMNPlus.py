@@ -1,6 +1,6 @@
 import keras.backend as K
 from keras import Input
-from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape
+from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, BatchNormalization
 from keras.models import Model
 from keras.optimizers import Adam, SGD, RMSprop
 
@@ -33,12 +33,13 @@ class VqaModel(object):
 		q = Dropout(drop_out_rate)(q)
 		# q_encoder = Bidirectional(GRU(gru_hidden_size), merge_mode='ave')(q)
 		# Bidirectional is meaningless because only last state output
-		q_encoder = GRU(gru_hidden_size)(q)
+		q_encoder = GRU(gru_hidden_size, dropout=drop_out_rate)(q)
 
 		v = Dense(embedding_dim, activation='tanh')(visual_feature)  # meaning? necessary?
 		v = Dropout(drop_out_rate)(v)
 		v_encoder = Bidirectional(GRU(units=gru_hidden_size,
-									  return_sequences=True),
+									  return_sequences=True,
+									  dropout=drop_out_rate),
 								  merge_mode='ave')(v)
 
 		return v_encoder, q_encoder
@@ -90,7 +91,7 @@ class VqaModel(object):
 		if answer_classes == 2:
 			answer = Dense(1, activation='sigmoid')(answer)
 		else:
-			answer = Dense(answer_classes, activation='softmax')(answer)
+			answer = Dense(answer_classes+1, activation='softmax')(answer)
 
 		return answer
 
@@ -100,8 +101,11 @@ class VqaModel(object):
 		"""
 		query_maxlen = self.data_info['max_question_size']
 		v_input = Input(shape=self.config.image_input_shape)
+		v_input_norm = BatchNormalization(axis=-1)(v_input)
+
 		q_input = Input(shape=(query_maxlen,))
-		v_encoder, q_encoder = self.visual_question_feature_embedding(v_input, q_input)
+		v_encoder, q_encoder = self.visual_question_feature_embedding(v_input_norm, q_input)
+
 		cur_memory = self.episodic_memory_module(v_encoder, q_encoder, q_encoder)
 		cur_memory = self.episodic_memory_module(v_encoder, q_encoder, cur_memory)
 		output = self.answer_module(cur_memory, q_encoder)
@@ -114,8 +118,12 @@ class VqaModel(object):
 			opt = RMSprop(lr=self.config.lr)
 		else:
 			opt = Adam(lr=self.config.lr)
+		answer_classes = self.data_info['answer_word_size']
 
-		_model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+		if answer_classes == 2:
+			_model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+		else:
+			_model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 		return _model
 
 # if __name__ == '__main__':

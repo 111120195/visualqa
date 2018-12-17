@@ -40,27 +40,30 @@ def build_model():
 
 
 if __name__ == '__main__':
-	K.clear_session()
 	config = Config()
 	data = DataGenerate(config)
 	train = data.generate_data(baseline=True, data_type='train')
+	val = data.generate_data(baseline=True, data_type='val')
 
 	setting = data.get_data_info()
 	answer_size = setting['answer_word_size']
 	steps_per_epoch = setting['steps_per_epoch']
 	vocab_size = setting['vocab_size']
 	query_maxlen = setting['max_question_size']
-
+	validation_steps = setting['validation_steps']
 	# data._encode_image()
 
 	base_model = build_model()
 	print(base_model.summary())
 	# plot_model(base_model)
 
-	# checkpoint = ModelCheckpoint('base_model.h5', monitor='val_loss', verbose=1,
-	# 							 save_best_only=True,
-	# 							 mode='min', period=1)
+	checkpoint = ModelCheckpoint('base_model.h5', monitor='val_loss', verbose=1,
+								 save_best_only=True,
+								 mode='min', period=1)
 
-	base_model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=20)
+	base_model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=60)
+	# 						, validation_data=val,
+	# 						 validation_steps=validation_steps,
+	# 						 callbacks=[checkpoint])
 
 	base_model.save('base_model.h5')

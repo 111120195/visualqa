@@ -4,7 +4,7 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 from config import Config
 from data_generater import DataGenerate
-from model import VqaModel
+from DMNPlus import VqaModel
 
 
 def train_model():

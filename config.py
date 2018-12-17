@@ -9,7 +9,7 @@ class Config(object):
 		self.val_img_dir = r'../data/val2014/COCO_val2014_'
 
 		# filter condition
-		self.answer_type = ['yes/no']
+		self.answer_type = ['other']
 		# {'other', 'number', 'yes/no'}
 		self.question_type = None
 		# {'what is on the', 'are the', 'is it', 'is the person', 'can you', 'what is the name', 'how many people are',
@@ -44,12 +44,12 @@ class Config(object):
 		self.drop_out_rate = 0.5
 		self.episodic_memory_hidden_size = 512
 		self.memory_size = 512
-		self.answer_output_hidden_size = 512
+		self.answer_output_hidden_size = 1024
 
 		# optimizer parameter
 		self.optimizer = 'adam' # 'sgd', 'rmsprop'
-		self.lr = 0.0001
+		self.lr = 0.001
 
 		# fit parameter
 		self.batch_size = 128
-		self.epochs = 100
+		self.epochs = 10
