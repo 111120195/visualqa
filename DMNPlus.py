@@ -1,8 +1,12 @@
 import keras.backend as K
 from keras import Input
-from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, BatchNormalization
+from keras.layers import GRU, Bidirectional, Dropout, Dense, Embedding, Lambda, concatenate, Reshape, \
+	BatchNormalization, Permute, Softmax, Multiply
 from keras.models import Model
 from keras.optimizers import Adam, SGD, RMSprop
+
+from config import Config
+from data_generater import DataGenerate
 
 
 class VqaModel(object):
@@ -69,9 +73,11 @@ class VqaModel(object):
 		z = Lambda(self.gate)([visual_feature, question_feature, pre_memory])
 		z = Dense(self.config.episodic_memory_hidden_size, activation='tanh')(z)
 		z = Dropout(self.config.drop_out_rate)(z)
-		z = Dense(1)(z)  # shape: (batch_size, 196)
+		z = Dense(1)(z)  # shape: (batch_size, 196, 1)
 		# z = Lambda(self.softmax_norm)(z)
+		# z = Permute(dims=(0, 2, 1))(z)
 		z = Lambda(K.softmax)(z)
+		# z = Softmax(axis=1)(z)
 		c = Lambda(lambda inputs: K.sum(inputs[0] * inputs[1], axis=1))([visual_feature, z])
 		# TODO using GRU attention
 
@@ -91,7 +97,7 @@ class VqaModel(object):
 		if answer_classes == 2:
 			answer = Dense(1, activation='sigmoid')(answer)
 		else:
-			answer = Dense(answer_classes+1, activation='softmax')(answer)
+			answer = Dense(answer_classes + 1, activation='softmax')(answer)
 
 		return answer
 
@@ -101,7 +107,7 @@ class VqaModel(object):
 		"""
 		query_maxlen = self.data_info['max_question_size']
 		v_input = Input(shape=self.config.image_input_shape)
-		v_input_norm = BatchNormalization(axis=-1)(v_input)
+		v_input_norm = Lambda(K.l2_normalize)(v_input)
 
 		q_input = Input(shape=(query_maxlen,))
 		v_encoder, q_encoder = self.visual_question_feature_embedding(v_input_norm, q_input)
@@ -126,33 +132,32 @@ class VqaModel(object):
 			_model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 		return _model
 
-# if __name__ == '__main__':
-# config_ = Config()
-# data = DataGenerate(config_)
-# train = data.generate_data(baseline=False, data_type='train')
-# val = data.generate_data(baseline=False, data_type='val')
-#
-# setting = data.get_data_info()
-# answer_size = setting['answer_word_size']
-# steps_per_epoch = setting['steps_per_epoch']
-# validation_steps = setting['validation_steps']
-# vocab_size = setting['vocab_size']
-# query_maxlen = setting['max_question_size']
-# #
 
-# # data._encode_image()
-#
-# model = VqaModel(config_).build_model(input_v, input_q)
-# # print(model.summary())
-# # TODO select fit parameter
+if __name__ == '__main__':
+	config_ = Config()
+	data = DataGenerate(config_)
+	train = data.generate_data(baseline=False, data_type='train')
+	val = data.generate_data(baseline=False, data_type='val')
+
+	setting = data.get_data_info()
+	answer_size = setting['answer_word_size']
+	steps_per_epoch = setting['steps_per_epoch']
+	validation_steps = setting['validation_steps']
+	vocab_size = setting['vocab_size']
+	query_maxlen = setting['max_question_size']
+	#
+
+	model = VqaModel(config_, setting).build_model()
+	print(model.summary())
+# TODO select fit parameter
 # model.load_weights('model.h5')
 #
 # checkpoint = ModelCheckpoint('vqa.{epoch:02d-{val_loss:.2f}}.h5', monitor='val_loss', verbose=1,
-#                              save_best_only=True,
-#                              mode='min', period=1)
+# 							 save_best_only=True,
+# 							 mode='min', period=1)
 # early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 #
 # model.fit_generator(train, steps_per_epoch=steps_per_epoch, epochs=100, validation_data=val,
-#                     validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
+# 					validation_steps=validation_steps, callbacks=[checkpoint, early_stopping])
 #
 # model.save('vqa.h5')

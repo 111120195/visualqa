@@ -6,7 +6,8 @@ import skimage.io as io
 
 import keras.backend as K
 from keras import Model
-from keras.applications import VGG19
+from keras.applications.vgg19 import VGG19
+from keras.applications.vgg19 import preprocess_input
 from keras.preprocessing.image import load_img, img_to_array
 from config import Config
 from parse import DataParser
@@ -51,6 +52,7 @@ class DataGenerate(object):
 		else:
 			input = img_to_array(image, data_format='channels_first')
 			input = input.reshape(3, image_rows, image_clos)
+		input = preprocess_input(input)
 		return input
 
 	def local_region_feature_extraction(self, img_input):
@@ -85,7 +87,7 @@ class DataGenerate(object):
 		"""
 		one hot encoder for answer
 		"""
-		oht = np.zeros(self._data.answer_word_size+1)
+		oht = np.zeros(self._data.answer_word_size + 1)
 		oht[answer] = 1
 		return oht
 
@@ -166,11 +168,17 @@ class DataGenerate(object):
 		img_feature = []
 		if data_type == 'train':
 			for img_id in image_ids:
-				img_f = np.load(os.path.join(self.config.train_image_feature_dir, str(img_id) + '.npy'))
+				img_f_file = os.path.join(self.config.train_image_feature_dir, str(img_id) + '.npy')
+				if not os.path.isfile(img_f_file):
+					continue
+				img_f = np.load(img_f_file)
 				img_feature.append(img_f)
 		else:
 			for img_id in image_ids:
-				img_f = np.load(os.path.join(self.config.val_image_feature_dir, str(img_id) + '.npy'))
+				img_f_file = os.path.join(self.config.val_image_feature_dir, str(img_id) + '.npy')
+				if not os.path.isfile(img_f_file):
+					continue
+				img_f = np.load(img_f_file)
 				img_feature.append(img_f)
 		return np.array(img_feature)
 
@@ -181,14 +189,14 @@ class DataGenerate(object):
 		img_feature = []
 		if data_type == 'train':
 			for id in image_ids:
-				img_feature_file =os.path.join(self.config.base_train_image_feature_dir, str(id) + '.npy')
+				img_feature_file = os.path.join(self.config.base_train_image_feature_dir, str(id) + '.npy')
 				if not os.path.isfile(img_feature_file):
 					continue
 				img_f = np.load(img_feature_file)
 				img_feature.append(img_f)
 		else:
 			for id in image_ids:
-				img_feature_file =os.path.join(self.config.base_val_image_feature_dir, str(id) + '.npy')
+				img_feature_file = os.path.join(self.config.base_val_image_feature_dir, str(id) + '.npy')
 				if not os.path.isfile(img_feature_file):
 					continue
 				img_f = np.load(img_feature_file)
@@ -297,8 +305,9 @@ class DataGenerate(object):
 if __name__ == '__main__':
 	config = Config()
 	data = DataGenerate(config)
-	# data._encode_base_image()
-	train = data.generate_data(baseline=False)
+	# print(data._data.val_data['image_id'].index())
+	# 	data._encode_image()
+	# train = data.generate_data(baseline=False)
 	val = data.generate_data(data_type='val')
-	[a, b], c = next(train)
-	data.show_data_random()
+	[a, b], c = next(val)
+# data.show_data_random()

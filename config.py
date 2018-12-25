@@ -44,11 +44,13 @@ class Config(object):
 		self.drop_out_rate = 0.5
 		self.episodic_memory_hidden_size = 512
 		self.memory_size = 512
-		self.answer_output_hidden_size = 1024
+		self.answer_output_hidden_size = 512
 
 		# optimizer parameter
 		self.optimizer = 'adam' # 'sgd', 'rmsprop'
 		self.lr = 0.001
+		self.lr_power = 0.5
+		self.epoch_decay = 5
 
 		# fit parameter
 		self.batch_size = 128

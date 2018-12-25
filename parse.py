@@ -1,4 +1,5 @@
 import json
+import os
 import pickle
 import re
 from collections import Counter
@@ -126,8 +127,6 @@ class DataParser(object):
 		# assert len(answers) == 10, 'the answers don\'t has 10'
 		if self.config.answer_encode_format == 'softmax':
 			index = self.words2index[answer] if answer in self.words2index else 0
-			if index == -1:
-				print(answer, index)
 			return index if index <= 3000 else 0
 		else:
 			return [self.words2index[x.strip()] for x in re.split('([\d\W])', answer) if x.strip()]
@@ -223,6 +222,9 @@ class DataParser(object):
 		self.train_sample_size = len(question_id_answer_train_df)
 		self.val_sample_size = len(question_id_answer_val_df)
 		print('train_sample_size:%d\n val_sample_size:%d ' % (self.train_sample_size, self.val_sample_size))
+		self.data_cleaning('train')
+		self.data_cleaning('val')
+		print('remove data which can not find picture')
 
 	def info(self):
 		"""
@@ -237,6 +239,31 @@ class DataParser(object):
 		info += 'question_type:\n' + str(self.question_type_set) + '\n'
 		info += 'answer_type:\n' + str(self.answer_type_set)
 		print(info)
+
+	def data_cleaning(self, data_type):
+		"""
+		cleaning data which can't find image file
+		:return:
+		"""
+		cleaning_items = 0
+		if data_type == 'train':
+			data_ = self.train_data
+			image_dir = self.config.train_img_dir
+		else:
+			data_ = self.val_data
+			image_dir = self.config.val_img_dir
+
+		for index in data_.index:
+			image_file = image_dir + str(data_['image_id'][index]).zfill(12) + '.jpg'
+			if not os.path.isfile(image_file):
+				data_.drop(index, inplace=True)
+				cleaning_items += 1
+				if data_type == 'train':
+					self.train_sample_size -= 1
+				else:
+					self.val_sample_size -= 1
+
+		return cleaning_items
 
 	def save_result(self):
 		"""
